@@ -119,10 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return shareUrl.toString();
   }
 
-  function buildShareMessage(activityName, details) {
-    return `Check out ${activityName} at Mergington High School: ${details.description} (${formatSchedule(
-      details
-    )})`;
+  function buildShareMessage(activityName) {
+    return `Check out ${activityName} at Mergington High School! Open the link to see the latest details and availability.`;
   }
 
   async function copyShareLink(shareUrl, activityName) {
@@ -563,9 +561,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Format the schedule using the new helper function
     const formattedSchedule = formatSchedule(details);
     const shareUrl = buildShareUrl(name);
-    const shareText = buildShareMessage(name, details);
+    const shareText = buildShareMessage(name);
     const encodedShareUrl = encodeURIComponent(shareUrl);
     const encodedShareText = encodeURIComponent(shareText);
+    const encodedWhatsAppMessage = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
     const encodedEmailSubject = encodeURIComponent(
       `Activity to share: ${name}`
     );
@@ -644,7 +643,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ${
           typeof navigator.share === "function"
             ? `
-          <button class="share-button native-share-button" data-share-url="${shareUrl}" data-share-text="${encodedShareText}">
+          <button class="share-button native-share-button" data-share-url="${shareUrl}" data-share-text="${shareText}">
             Share
           </button>
         `
@@ -661,7 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </a>
         <a
           class="share-button share-link-button"
-          href="https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}"
+          href="https://wa.me/?text=${encodedWhatsAppMessage}"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -696,7 +695,7 @@ document.addEventListener("DOMContentLoaded", () => {
       nativeShareButton.addEventListener("click", () => {
         shareActivity(
           nativeShareButton.dataset.shareUrl,
-          decodeURIComponent(nativeShareButton.dataset.shareText),
+          nativeShareButton.dataset.shareText,
           name
         );
       });
