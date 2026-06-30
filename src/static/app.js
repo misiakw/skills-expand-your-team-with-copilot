@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchQuery = "";
   let currentDay = "";
   let currentTimeRange = "";
+  let sharedActivityName = "";
 
   // Authentication state
   let currentUser = null;
@@ -96,6 +97,62 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     fetchActivities();
+  }
+
+  function initializeSharedActivity() {
+    const activityFromUrl = new URLSearchParams(window.location.search).get(
+      "activity"
+    );
+
+    if (!activityFromUrl) {
+      return;
+    }
+
+    sharedActivityName = activityFromUrl;
+    searchQuery = activityFromUrl;
+    searchInput.value = activityFromUrl;
+  }
+
+  function buildShareUrl(activityName) {
+    const shareUrl = new URL(window.location.origin + window.location.pathname);
+    shareUrl.searchParams.set("activity", activityName);
+    return shareUrl.toString();
+  }
+
+  function buildShareMessage(activityName, details) {
+    return `Check out ${activityName} at Mergington High School: ${details.description} (${formatSchedule(
+      details
+    )})`;
+  }
+
+  async function copyShareLink(shareUrl, activityName) {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showMessage(`${activityName} link copied to share with friends.`, "success");
+    } catch (error) {
+      console.error("Error copying share link:", error);
+      showMessage("Unable to copy the share link right now.", "error");
+    }
+  }
+
+  async function shareActivity(shareUrl, shareText, activityName) {
+    if (typeof navigator.share !== "function") {
+      await copyShareLink(shareUrl, activityName);
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `${activityName} | Mergington High School`,
+        text: shareText,
+        url: shareUrl,
+      });
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Error sharing activity:", error);
+        showMessage("Unable to open sharing options right now.", "error");
+      }
+    }
   }
 
   // Check if user is already logged in (from localStorage)
@@ -460,7 +517,11 @@ document.addEventListener("DOMContentLoaded", () => {
       activitiesList.innerHTML = `
         <div class="no-results">
           <h4>No activities found</h4>
-          <p>Try adjusting your search or filter criteria</p>
+          <p>${
+            sharedActivityName
+              ? "That shared activity is not available right now."
+              : "Try adjusting your search or filter criteria"
+          }</p>
         </div>
       `;
       return;
@@ -476,6 +537,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
     activityCard.className = "activity-card";
+    if (name === sharedActivityName) {
+      activityCard.classList.add("shared-activity");
+    }
 
     // Calculate spots and capacity
     const totalSpots = details.max_participants;
@@ -498,6 +562,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Format the schedule using the new helper function
     const formattedSchedule = formatSchedule(details);
+    const shareUrl = buildShareUrl(name);
+    const shareText = buildShareMessage(name, details);
+    const encodedShareUrl = encodeURIComponent(shareUrl);
+    const encodedShareText = encodeURIComponent(shareText);
+    const encodedEmailSubject = encodeURIComponent(
+      `Activity to share: ${name}`
+    );
 
     // Create activity tag
     const tagHtml = `
@@ -569,6 +640,34 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-actions" aria-label="Share ${name}">
+        ${
+          typeof navigator.share === "function"
+            ? `
+          <button class="share-button native-share-button" data-share-url="${shareUrl}" data-share-text="${encodedShareText}">
+            Share
+          </button>
+        `
+            : ""
+        }
+        <button class="share-button copy-share-button" data-share-url="${shareUrl}">
+          Copy Link
+        </button>
+        <a
+          class="share-button share-link-button"
+          href="mailto:?subject=${encodedEmailSubject}&body=${encodedShareText}%0A%0A${encodedShareUrl}"
+        >
+          Email
+        </a>
+        <a
+          class="share-button share-link-button"
+          href="https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          WhatsApp
+        </a>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -585,6 +684,22 @@ document.addEventListener("DOMContentLoaded", () => {
           openRegistrationModal(name);
         });
       }
+    }
+
+    const copyShareButton = activityCard.querySelector(".copy-share-button");
+    copyShareButton.addEventListener("click", () => {
+      copyShareLink(copyShareButton.dataset.shareUrl, name);
+    });
+
+    const nativeShareButton = activityCard.querySelector(".native-share-button");
+    if (nativeShareButton) {
+      nativeShareButton.addEventListener("click", () => {
+        shareActivity(
+          nativeShareButton.dataset.shareUrl,
+          decodeURIComponent(nativeShareButton.dataset.shareText),
+          name
+        );
+      });
     }
 
     activitiesList.appendChild(activityCard);
@@ -862,6 +977,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Initialize app
+  initializeSharedActivity();
   checkAuthentication();
   initializeFilters();
   fetchActivities();
