@@ -123,14 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Check out ${activityName} at Mergington High School! Open the link to see the latest details and availability.`;
   }
 
-  function escapeHtmlAttribute(value) {
-    return value
-      .replaceAll('"', "&quot;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll("&", "&amp;");
-  }
-
   async function copyShareLink(shareUrl, activityName) {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -142,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function shareActivity(shareUrl, shareText, activityName) {
-    if (typeof navigator.share !== "function") {
+    if (!("share" in navigator)) {
       await copyShareLink(shareUrl, activityName);
       return;
     }
@@ -570,9 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const formattedSchedule = formatSchedule(details);
     const shareUrl = buildShareUrl(name);
     const shareText = buildShareMessage(name);
-    const safeShareUrl = escapeHtmlAttribute(shareUrl);
-    const safeShareText = escapeHtmlAttribute(shareText);
-    const safeActivityName = escapeHtmlAttribute(name);
 
     // Create activity tag
     const tagHtml = `
@@ -644,40 +633,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
-      <div class="share-actions" role="group" aria-label="Share ${safeActivityName}">
-        ${
-          typeof navigator.share === "function"
-            ? `
-          <button class="share-button native-share-button" data-share-url="${safeShareUrl}" data-share-text="${safeShareText}" aria-label="Share ${safeActivityName}">
-            Share
-          </button>
-        `
-            : ""
-        }
-        <button class="share-button copy-share-button" data-share-url="${safeShareUrl}" aria-label="Copy link for ${safeActivityName}">
-          Copy Link
-        </button>
-        <a
-          class="share-button share-link-button"
-          aria-label="Email link for ${safeActivityName}"
-          href="mailto:?subject=${encodeURIComponent(
-            `Activity to share: ${name}`
-          )}&body=${encodeURIComponent(shareText)}%0A%0A${encodeURIComponent(shareUrl)}"
-        >
-          Email
-        </a>
-        <a
-          class="share-button share-link-button"
-          aria-label="Share ${safeActivityName} on WhatsApp"
-          href="https://wa.me/?text=${encodeURIComponent(
-            `${shareText}\n\n${shareUrl}`
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          WhatsApp
-        </a>
-      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -696,23 +651,57 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    const copyShareButton = activityCard.querySelector(".copy-share-button");
-    if (copyShareButton) {
-      copyShareButton.addEventListener("click", () => {
-        copyShareLink(copyShareButton.dataset.shareUrl, name);
+    const shareActions = document.createElement("div");
+    shareActions.className = "share-actions";
+    shareActions.setAttribute("role", "group");
+    shareActions.setAttribute("aria-label", `Share ${name}`);
+
+    if ("share" in navigator) {
+      const nativeShareButton = document.createElement("button");
+      nativeShareButton.className = "share-button native-share-button";
+      nativeShareButton.type = "button";
+      nativeShareButton.textContent = "Share";
+      nativeShareButton.setAttribute("aria-label", `Share ${name}`);
+      nativeShareButton.addEventListener("click", () => {
+        shareActivity(shareUrl, shareText, name);
       });
+      shareActions.appendChild(nativeShareButton);
     }
 
-    const nativeShareButton = activityCard.querySelector(".native-share-button");
-    if (nativeShareButton) {
-      nativeShareButton.addEventListener("click", () => {
-        shareActivity(
-          nativeShareButton.dataset.shareUrl,
-          nativeShareButton.dataset.shareText,
-          name
-        );
-      });
-    }
+    const copyShareButton = document.createElement("button");
+    copyShareButton.className = "share-button copy-share-button";
+    copyShareButton.type = "button";
+    copyShareButton.textContent = "Copy Link";
+    copyShareButton.setAttribute("aria-label", `Copy link for ${name}`);
+    copyShareButton.addEventListener("click", () => {
+      copyShareLink(shareUrl, name);
+    });
+    shareActions.appendChild(copyShareButton);
+
+    const emailShareLink = document.createElement("a");
+    emailShareLink.className = "share-button share-link-button";
+    emailShareLink.textContent = "Email";
+    emailShareLink.href = `mailto:?subject=${encodeURIComponent(
+      `Activity to share: ${name}`
+    )}&body=${encodeURIComponent(shareText)}%0A%0A${encodeURIComponent(shareUrl)}`;
+    emailShareLink.setAttribute("aria-label", `Email link for ${name}`);
+    shareActions.appendChild(emailShareLink);
+
+    const whatsAppShareLink = document.createElement("a");
+    whatsAppShareLink.className = "share-button share-link-button";
+    whatsAppShareLink.textContent = "WhatsApp";
+    whatsAppShareLink.href = `https://wa.me/?text=${encodeURIComponent(
+      `${shareText}\n\n${shareUrl}`
+    )}`;
+    whatsAppShareLink.target = "_blank";
+    whatsAppShareLink.rel = "noopener noreferrer";
+    whatsAppShareLink.setAttribute(
+      "aria-label",
+      `Share ${name} on WhatsApp`
+    );
+    shareActions.appendChild(whatsAppShareLink);
+
+    activityCard.appendChild(shareActions);
 
     activitiesList.appendChild(activityCard);
   }
