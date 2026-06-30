@@ -27,7 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("login-form");
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
-  const themeStorageKey = "theme";
+  const THEME_STORAGE_KEY = "theme";
+  const THEME_DARK = "dark";
+  const THEME_LIGHT = "light";
 
   // Activity categories with corresponding colors
   const activityTypes = {
@@ -258,29 +260,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function applyTheme(theme, persistPreference = true) {
-    const isDarkMode = theme === "dark";
+    const isDarkMode = theme === THEME_DARK;
     document.body.classList.toggle("dark-mode", isDarkMode);
     updateThemeToggleUI();
 
     if (persistPreference) {
-      localStorage.setItem(themeStorageKey, isDarkMode ? "dark" : "light");
+      localStorage.setItem(
+        THEME_STORAGE_KEY,
+        isDarkMode ? THEME_DARK : THEME_LIGHT
+      );
     }
   }
 
   function initializeTheme() {
-    const savedTheme = localStorage.getItem(themeStorageKey);
-    if (savedTheme === "dark" || savedTheme === "light") {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === THEME_DARK || savedTheme === THEME_LIGHT) {
       applyTheme(savedTheme, false);
       return;
     }
 
-    applyTheme("light", false);
+    applyTheme(THEME_LIGHT, false);
   }
 
   if (themeToggleButton) {
     themeToggleButton.addEventListener("click", () => {
       const isDarkMode = document.body.classList.contains("dark-mode");
-      applyTheme(isDarkMode ? "light" : "dark");
+      applyTheme(isDarkMode ? THEME_LIGHT : THEME_DARK);
     });
   }
 
