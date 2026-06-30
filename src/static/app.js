@@ -265,21 +265,34 @@ document.addEventListener("DOMContentLoaded", () => {
     updateThemeToggleUI();
 
     if (persistPreference) {
-      localStorage.setItem(
-        THEME_STORAGE_KEY,
-        isDarkMode ? THEME_DARK : THEME_LIGHT
-      );
+      try {
+        localStorage.setItem(
+          THEME_STORAGE_KEY,
+          isDarkMode ? THEME_DARK : THEME_LIGHT
+        );
+      } catch (error) {
+        console.warn("Could not save theme preference:", error);
+      }
     }
   }
 
   function initializeTheme() {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Could not read theme preference:", error);
+    }
+
     if (savedTheme === THEME_DARK || savedTheme === THEME_LIGHT) {
       applyTheme(savedTheme, false);
       return;
     }
 
-    applyTheme(THEME_LIGHT, false);
+    const prefersDarkMode =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(prefersDarkMode ? THEME_DARK : THEME_LIGHT, false);
   }
 
   if (themeToggleButton) {
