@@ -123,6 +123,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Check out ${activityName} at Mergington High School! Open the link to see the latest details and availability.`;
   }
 
+  function escapeHtmlAttribute(value) {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
   async function copyShareLink(shareUrl, activityName) {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -562,12 +570,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const formattedSchedule = formatSchedule(details);
     const shareUrl = buildShareUrl(name);
     const shareText = buildShareMessage(name);
-    const encodedShareUrl = encodeURIComponent(shareUrl);
-    const encodedShareText = encodeURIComponent(shareText);
-    const encodedWhatsAppMessage = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
-    const encodedEmailSubject = encodeURIComponent(
-      `Activity to share: ${name}`
-    );
+    const safeShareUrl = escapeHtmlAttribute(shareUrl);
+    const safeShareText = escapeHtmlAttribute(shareText);
+    const safeActivityName = escapeHtmlAttribute(name);
 
     // Create activity tag
     const tagHtml = `
@@ -639,28 +644,32 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
-      <div class="share-actions" aria-label="Share ${name}">
+      <div class="share-actions" aria-label="Share ${safeActivityName}">
         ${
           typeof navigator.share === "function"
             ? `
-          <button class="share-button native-share-button" data-share-url="${shareUrl}" data-share-text="${shareText}">
+          <button class="share-button native-share-button" data-share-url="${safeShareUrl}" data-share-text="${safeShareText}">
             Share
           </button>
         `
             : ""
         }
-        <button class="share-button copy-share-button" data-share-url="${shareUrl}">
+        <button class="share-button copy-share-button" data-share-url="${safeShareUrl}">
           Copy Link
         </button>
         <a
           class="share-button share-link-button"
-          href="mailto:?subject=${encodedEmailSubject}&body=${encodedShareText}%0A%0A${encodedShareUrl}"
+          href="mailto:?subject=${encodeURIComponent(
+            `Activity to share: ${name}`
+          )}&body=${encodeURIComponent(shareText)}%0A%0A${encodeURIComponent(shareUrl)}"
         >
           Email
         </a>
         <a
           class="share-button share-link-button"
-          href="https://wa.me/?text=${encodedWhatsAppMessage}"
+          href="https://wa.me/?text=${encodeURIComponent(
+            `${shareText}\n\n${shareUrl}`
+          )}"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -686,9 +695,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const copyShareButton = activityCard.querySelector(".copy-share-button");
-    copyShareButton.addEventListener("click", () => {
-      copyShareLink(copyShareButton.dataset.shareUrl, name);
-    });
+    if (copyShareButton) {
+      copyShareButton.addEventListener("click", () => {
+        copyShareLink(copyShareButton.dataset.shareUrl, name);
+      });
+    }
 
     const nativeShareButton = activityCard.querySelector(".native-share-button");
     if (nativeShareButton) {
