@@ -20,10 +20,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInfo = document.getElementById("user-info");
   const displayName = document.getElementById("display-name");
   const logoutButton = document.getElementById("logout-button");
+  const themeToggleButton = document.getElementById("theme-toggle-button");
+  const themeToggleLabel = document.getElementById("theme-toggle-label");
+  const themeToggleIcon = themeToggleButton?.querySelector(".theme-icon");
   const loginModal = document.getElementById("login-modal");
   const loginForm = document.getElementById("login-form");
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
+  const THEME_STORAGE_KEY = "theme";
+  const THEME_DARK = "dark";
+  const THEME_LIGHT = "light";
 
   // Activity categories with corresponding colors
   const activityTypes = {
@@ -238,6 +244,63 @@ document.addEventListener("DOMContentLoaded", () => {
   loginButton.addEventListener("click", openLoginModal);
   logoutButton.addEventListener("click", logout);
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
+
+  function updateThemeToggleUI() {
+    if (!themeToggleButton || !themeToggleLabel || !themeToggleIcon) {
+      return;
+    }
+
+    const isDarkMode = document.body.classList.contains("dark-mode");
+    themeToggleLabel.textContent = isDarkMode ? "Light mode" : "Dark mode";
+    themeToggleIcon.textContent = isDarkMode ? "☀️" : "🌙";
+    themeToggleButton.setAttribute(
+      "aria-label",
+      isDarkMode ? "Switch to light mode" : "Switch to dark mode"
+    );
+  }
+
+  function applyTheme(theme, persistPreference = true) {
+    const isDarkMode = theme === THEME_DARK;
+    document.body.classList.toggle("dark-mode", isDarkMode);
+    updateThemeToggleUI();
+
+    if (persistPreference) {
+      try {
+        localStorage.setItem(
+          THEME_STORAGE_KEY,
+          isDarkMode ? THEME_DARK : THEME_LIGHT
+        );
+      } catch (error) {
+        console.warn("Could not save theme preference:", error);
+      }
+    }
+  }
+
+  function initializeTheme() {
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Could not read theme preference:", error);
+    }
+
+    if (savedTheme === THEME_DARK || savedTheme === THEME_LIGHT) {
+      applyTheme(savedTheme, false);
+      return;
+    }
+
+    const prefersDarkMode =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(prefersDarkMode ? THEME_DARK : THEME_LIGHT, false);
+  }
+
+  if (themeToggleButton) {
+    themeToggleButton.addEventListener("click", () => {
+      const isDarkMode = document.body.classList.contains("dark-mode");
+      applyTheme(isDarkMode ? THEME_LIGHT : THEME_DARK);
+    });
+  }
 
   // Close login modal when clicking outside
   window.addEventListener("click", (event) => {
@@ -862,6 +925,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Initialize app
+  initializeTheme();
   checkAuthentication();
   initializeFilters();
   fetchActivities();
