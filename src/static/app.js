@@ -125,16 +125,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function escapeHtmlAttribute(value) {
     return value
-      .replaceAll("&", "&amp;")
       .replaceAll('"', "&quot;")
       .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+      .replaceAll(">", "&gt;")
+      .replaceAll("&", "&amp;");
   }
 
   async function copyShareLink(shareUrl, activityName) {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      showMessage(`${activityName} link copied to share with friends.`, "success");
+      showMessage(`${activityName} link copied to the clipboard.`, "success");
     } catch (error) {
       console.error("Error copying share link:", error);
       showMessage("Unable to copy the share link right now.", "error");
@@ -644,21 +644,22 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
-      <div class="share-actions" aria-label="Share ${safeActivityName}">
+      <div class="share-actions" role="group" aria-label="Share ${safeActivityName}">
         ${
           typeof navigator.share === "function"
             ? `
-          <button class="share-button native-share-button" data-share-url="${safeShareUrl}" data-share-text="${safeShareText}">
+          <button class="share-button native-share-button" data-share-url="${safeShareUrl}" data-share-text="${safeShareText}" aria-label="Share ${safeActivityName}">
             Share
           </button>
         `
             : ""
         }
-        <button class="share-button copy-share-button" data-share-url="${safeShareUrl}">
+        <button class="share-button copy-share-button" data-share-url="${safeShareUrl}" aria-label="Copy link for ${safeActivityName}">
           Copy Link
         </button>
         <a
           class="share-button share-link-button"
+          aria-label="Email link for ${safeActivityName}"
           href="mailto:?subject=${encodeURIComponent(
             `Activity to share: ${name}`
           )}&body=${encodeURIComponent(shareText)}%0A%0A${encodeURIComponent(shareUrl)}"
@@ -667,6 +668,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </a>
         <a
           class="share-button share-link-button"
+          aria-label="Share ${safeActivityName} on WhatsApp"
           href="https://wa.me/?text=${encodeURIComponent(
             `${shareText}\n\n${shareUrl}`
           )}"
