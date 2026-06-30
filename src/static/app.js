@@ -22,12 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutButton = document.getElementById("logout-button");
   const themeToggleButton = document.getElementById("theme-toggle-button");
   const themeToggleLabel = document.getElementById("theme-toggle-label");
-  const themeToggleIcon = themeToggleButton.querySelector(".theme-icon");
+  const themeToggleIcon = themeToggleButton?.querySelector(".theme-icon");
   const loginModal = document.getElementById("login-modal");
   const loginForm = document.getElementById("login-form");
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
-  const themeStorageKey = "preferredTheme";
+  const themeStorageKey = "theme";
 
   // Activity categories with corresponding colors
   const activityTypes = {
@@ -244,6 +244,10 @@ document.addEventListener("DOMContentLoaded", () => {
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
 
   function updateThemeToggleUI() {
+    if (!themeToggleButton || !themeToggleLabel || !themeToggleIcon) {
+      return;
+    }
+
     const isDarkMode = document.body.classList.contains("dark-mode");
     themeToggleLabel.textContent = isDarkMode ? "Light mode" : "Dark mode";
     themeToggleIcon.textContent = isDarkMode ? "☀️" : "🌙";
@@ -273,10 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
     applyTheme("light", false);
   }
 
-  themeToggleButton.addEventListener("click", () => {
-    const isDarkMode = document.body.classList.contains("dark-mode");
-    applyTheme(isDarkMode ? "light" : "dark");
-  });
+  if (themeToggleButton) {
+    themeToggleButton.addEventListener("click", () => {
+      const isDarkMode = document.body.classList.contains("dark-mode");
+      applyTheme(isDarkMode ? "light" : "dark");
+    });
+  }
 
   // Close login modal when clicking outside
   window.addEventListener("click", (event) => {
